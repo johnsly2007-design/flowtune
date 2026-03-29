@@ -1,140 +1,34 @@
+<!-- ===================== FRONTEND ===================== -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <title>FlowTune</title>
-
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-
 <style>
-body {
-  margin: 0;
-  font-family: 'Inter', sans-serif;
-  background: #121212;
-  color: white;
-  display: flex;
-}
-
-/* SIDEBAR */
-.sidebar {
-  width: 220px;
-  background: #000;
-  padding: 20px;
-}
-
-.logo {
-  font-size: 22px;
-  font-weight: 700;
-  margin-bottom: 30px;
-}
-
-/* MAIN */
-.main {
-  flex: 1;
-  padding: 20px 30px;
-}
-
-.top-bar {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-input {
-  flex: 1;
-  padding: 12px;
-  border-radius: 20px;
-  border: none;
-  background: #282828;
-  color: white;
-}
-
-button {
-  background: #1db954;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 20px;
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-button:hover {
-  transform: scale(1.05);
-}
-
-.status {
-  color: #aaa;
-  margin-bottom: 15px;
-}
-
-/* PLAYLIST */
-.song {
-  display: grid;
-  grid-template-columns: 50px 60px 1fr 80px;
-  align-items: center;
-  padding: 10px;
-  border-radius: 6px;
-  transition: 0.2s;
-}
-
-.song:hover {
-  background: #1f1f1f;
-}
-
-.song.active {
-  background: #1db95430;
-}
-
-.song img {
-  width: 50px;
-  height: 50px;
-  border-radius: 4px;
-}
-
-.song-info {
-  margin-left: 10px;
-}
-
-.song-title {
-  font-weight: 600;
-}
-
-.song-artist {
-  font-size: 13px;
-  color: #aaa;
-}
-
-.play-btn {
-  background: none;
-  border: 1px solid #555;
-  border-radius: 50%;
-  width: 35px;
-  height: 35px;
-}
-
-/* ENERGY BAR */
-.energy-bar {
-  height: 6px;
-  background: #333;
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 20px;
-}
-
-.energy-fill {
-  height: 100%;
-  background: #1db954;
-  width: 0%;
-  transition: width 0.4s ease;
-}
-
-.actions {
-  margin-top: 20px;
-}
+/* --- Styles similar to Spotify --- */
+body {margin:0;font-family:'Inter',sans-serif;background:#121212;color:white;display:flex;}
+.sidebar{width:220px;background:#000;padding:20px;}
+.logo{font-size:22px;font-weight:700;margin-bottom:30px;}
+.main{flex:1;padding:20px 30px;}
+.top-bar{display:flex;gap:10px;margin-bottom:20px;}
+input{flex:1;padding:12px;border-radius:20px;border:none;background:#282828;color:white;}
+button{background:#1db954;border:none;padding:10px 18px;border-radius:20px;color:white;font-weight:600;cursor:pointer;}
+button:hover{transform:scale(1.05);}
+.status{color:#aaa;margin-bottom:15px;}
+.song{display:grid;grid-template-columns:50px 60px 1fr 80px;align-items:center;padding:10px;border-radius:6px;transition:0.2s;}
+.song:hover{background:#1f1f1f;}
+.song.active{background:#1db95430;}
+.song img{width:50px;height:50px;border-radius:4px;}
+.song-info{margin-left:10px;}
+.song-title{font-weight:600;}
+.song-artist{font-size:13px;color:#aaa;}
+.play-btn{background:none;border:1px solid #555;border-radius:50%;width:35px;height:35px;}
+.energy-bar{height:6px;background:#333;border-radius:4px;overflow:hidden;margin-bottom:20px;}
+.energy-fill{height:100%;background:#1db954;width:0%;transition:width 0.4s ease;}
+.actions{margin-top:20px;}
 </style>
 </head>
-
 <body>
 
 <div class="sidebar">
@@ -142,199 +36,91 @@ button:hover {
 </div>
 
 <div class="main">
-
   <div class="top-bar">
     <input id="trackInput" placeholder="Start with a song...">
     <button onclick="generateFlow()">Generate</button>
   </div>
-
   <div class="status" id="status"></div>
-
-  <div class="energy-bar">
-    <div class="energy-fill" id="energyFill"></div>
-  </div>
-
+  <div class="energy-bar"><div class="energy-fill" id="energyFill"></div></div>
   <div id="playlist"></div>
-
-  <div class="actions">
-    <button onclick="savePlaylist()">💾 Save to Spotify</button>
-  </div>
-
+  <div class="actions"><button onclick="savePlaylist()">💾 Save to Spotify</button></div>
 </div>
 
 <script>
-let currentPlaylist = [];
-let currentIndex = -1;
+let currentPlaylist=[],currentIndex=-1;
+const API_BASE="https://flowtune-tbgc.onrender.com";
 
-const API_BASE = 'http://localhost:3000';
+function setStatus(msg){document.getElementById('status').textContent=msg;}
 
-function setStatus(msg) {
-  document.getElementById('status').textContent = msg;
-}
-
-//////////////////////////////////////////////////
-// GENERATE FLOW
-//////////////////////////////////////////////////
-
-async function generateFlow() {
-  const input = document.getElementById('trackInput').value.trim();
-  if (!input) return alert('Enter a song');
-
+async function generateFlow(){
+  const input=document.getElementById('trackInput').value.trim();
+  if(!input)return alert('Enter a song');
   setStatus('Generating flow...');
-  document.getElementById('playlist').innerHTML = '';
-
-  try {
-    let trackId = input;
-
-    if (!/^([0-9A-Za-z]{22})$/.test(input)) {
-      const res = await fetch(`${API_BASE}/search?name=${encodeURIComponent(input)}`, {
-        credentials: 'include'
-      });
-
-      const data = await res.json();
-
-      if (!data.track_id) {
-        setStatus('Song not found');
-        return;
-      }
-
-      trackId = data.track_id;
+  document.getElementById('playlist').innerHTML='';
+  try{
+    let trackId=input;
+    if(!/^([0-9A-Za-z]{22})$/.test(input)){
+      const res=await fetch(`${API_BASE}/search?name=${encodeURIComponent(input)}`,{credentials:'include'});
+      const data=await res.json();
+      if(!data.track_id){setStatus('Song not found');return;}
+      trackId=data.track_id;
     }
-
-    const res = await fetch(`${API_BASE}/generate_flow?track_id=${trackId}`, {
-      credentials: 'include'
-    });
-
-    const data = await res.json();
-
-    currentPlaylist = data.playlist;
+    const res=await fetch(`${API_BASE}/generate_flow?track_id=${trackId}`,{credentials:'include'});
+    const data=await res.json();
+    currentPlaylist=data.playlist;
     renderPlaylist();
-
     setStatus('Flow ready');
-
-  } catch (err) {
-    console.error(err);
-    setStatus('Error generating flow');
-  }
+  }catch(err){console.error(err);setStatus('Error generating flow');}
 }
 
-//////////////////////////////////////////////////
-// RENDER PLAYLIST
-//////////////////////////////////////////////////
-
-function renderPlaylist() {
-  const container = document.getElementById('playlist');
-  container.innerHTML = '';
-
-  currentPlaylist.forEach((song, index) => {
-    const div = document.createElement('div');
-    div.className = 'song';
-
-    div.innerHTML = `
-      <div>${index + 1}</div>
-      <img src="${song.albumArt}">
-      <div class="song-info">
-        <div class="song-title">${song.name}</div>
-        <div class="song-artist">${song.artists}</div>
-      </div>
-      <button class="play-btn">▶</button>
-      <audio src="${song.preview_url || ''}"></audio>
-    `;
-
-    const btn = div.querySelector('.play-btn');
-    const audio = div.querySelector('audio');
-
-    btn.onclick = () => playSong(audio, index, div);
-
+function renderPlaylist(){
+  const container=document.getElementById('playlist');
+  container.innerHTML='';
+  currentPlaylist.forEach((song,index)=>{
+    const div=document.createElement('div');div.className='song';
+    div.innerHTML=`<div>${index+1}</div><img src="${song.albumArt}"><div class="song-info"><div class="song-title">${song.name}</div><div class="song-artist">${song.artists}</div></div><button class="play-btn">▶</button><audio src="${song.preview_url||''}"></audio>`;
+    const btn=div.querySelector('.play-btn'),audio=div.querySelector('audio');
+    btn.onclick=()=>playSong(audio,index,div);
     container.appendChild(div);
   });
 }
 
-//////////////////////////////////////////////////
-// PLAYBACK
-//////////////////////////////////////////////////
-
-function playSong(audio, index, element) {
+function playSong(audio,index,element){
   stopAll();
-
-  if (!audio.src) {
-    alert('No preview available');
-    return;
-  }
-
-  currentIndex = index;
-  audio.play();
-
-  element.classList.add('active');
-  updateEnergyBar(index);
-
-  audio.onended = () => autoNext();
+  if(!audio.src){alert('No preview');return;}
+  currentIndex=index;audio.play();
+  element.classList.add('active');updateEnergyBar(index);
+  audio.onended=()=>autoNext();
 }
 
-function autoNext() {
-  const songs = document.querySelectorAll('.song');
-
-  if (songs[currentIndex + 1]) {
-    songs[currentIndex + 1].querySelector('.play-btn').click();
-  }
+function autoNext(){
+  const songs=document.querySelectorAll('.song');
+  if(songs[currentIndex+1])songs[currentIndex+1].querySelector('.play-btn').click();
 }
 
-function stopAll() {
-  document.querySelectorAll('audio').forEach(a => {
-    a.pause();
-    a.currentTime = 0;
-  });
-
-  document.querySelectorAll('.song').forEach(s => s.classList.remove('active'));
+function stopAll(){
+  document.querySelectorAll('audio').forEach(a=>{a.pause();a.currentTime=0;});
+  document.querySelectorAll('.song').forEach(s=>s.classList.remove('active'));
 }
 
-//////////////////////////////////////////////////
-// ENERGY BAR
-//////////////////////////////////////////////////
-
-function updateEnergyBar(index) {
-  const percent = ((index + 1) / currentPlaylist.length) * 100;
-  document.getElementById('energyFill').style.width = percent + '%';
+function updateEnergyBar(index){
+  const percent=((index+1)/currentPlaylist.length)*100;
+  document.getElementById('energyFill').style.width=percent+'%';
 }
 
-//////////////////////////////////////////////////
-// SAVE PLAYLIST
-//////////////////////////////////////////////////
-
-async function savePlaylist() {
-  if (!currentPlaylist.length) return alert('No playlist');
-
-  try {
-    const res = await fetch(`${API_BASE}/save_playlist`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        tracks: currentPlaylist.map(t => t.id)
-      })
+async function savePlaylist(){
+  if(!currentPlaylist.length)return alert('No playlist');
+  try{
+    const res=await fetch(`${API_BASE}/save_playlist`,{
+      method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tracks:currentPlaylist.map(t=>t.id)})
     });
-
-    if (res.status === 401) {
-      window.location.href = `${API_BASE}/login`;
-      return;
-    }
-
-    const data = await res.json();
-
-    if (data.playlist_url) {
-      window.open(data.playlist_url, '_blank');
-    } else {
-      alert('Error saving playlist');
-    }
-
-  } catch (err) {
-    console.error(err);
-    alert('Save failed');
-  }
+    if(res.status===401){window.location.href=`${API_BASE}/login`;return;}
+    const data=await res.json();
+    if(data.playlist_url)window.open(data.playlist_url,'_blank');else alert('Error saving playlist');
+  }catch(err){console.error(err);alert('Save failed');}
 }
 </script>
-
 </body>
 </html>
